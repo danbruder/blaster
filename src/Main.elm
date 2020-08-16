@@ -13,12 +13,13 @@ import Html.Events exposing (onClick)
 type alias Model =
     { coords : ( Int, Int )
     , scale : Float
+    , temperature : Float
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { coords = ( 0, 0 ), scale = 1 }, Cmd.none )
+    ( { coords = ( 0, 0 ), scale = 1, temperature = 0.0 }, Cmd.none )
 
 
 
@@ -30,6 +31,8 @@ type Msg
     | LandButtonClicked
     | ClickedBigger
     | ClickedSmaller
+    | ClickedHotter Float
+    | ClickedColder Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -47,6 +50,12 @@ update msg model =
         ClickedSmaller ->
             ( { model | scale = model.scale * 0.5 }, Cmd.none )
 
+        ClickedHotter scale ->
+            ( { model | temperature = model.temperature + scale }, Cmd.none )
+
+        ClickedColder scale ->
+            ( { model | temperature = model.temperature - scale }, Cmd.none )
+
 
 
 ---- VIEW ----
@@ -54,23 +63,43 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
+    let
+        control msg txt color =
+            button [ class (color ++ " p-4 rounded text-xl uppercase text-white"), onClick msg ] [ text txt ]
+    in
     div []
-        [ div [ style "display" "flex", style "position" "relative", style "flex-direction" "column", style "align-items" "center", style "justify-content" "flex-end", style "height" "100vh" ]
-            [ img
-                [ style "position" "absolute"
-                , style "bottom" ((model.coords |> Tuple.first |> String.fromInt) ++ "px")
-                , style "left" ((model.coords |> Tuple.second |> String.fromInt) ++ "px")
-                , style "transition" "bottom 0.8s ease-in-out 0.1s"
-                , style "transform" ("scale(" ++ String.fromFloat model.scale ++ ")")
-                , src "/rocket.png"
+        [ div [ class "h-screen flex flex-row" ]
+            [ div [ class "border-r border-gray-100 w-64" ]
+                [ img
+                    [ style "position" "absolute"
+                    , style "bottom" ((model.coords |> Tuple.first |> String.fromInt) ++ "px")
+                    , style "left" ((model.coords |> Tuple.second |> String.fromInt) ++ "px")
+                    , style "transition" "bottom 0.8s ease-in-out 0.1s"
+                    , style "transform" ("scale(" ++ String.fromFloat model.scale ++ ")")
+                    , src "/rocket.png"
+                    ]
+                    []
                 ]
-                []
             , div
-                [ style "z-index" "10" ]
-                [ button [ onClick LaunchButtonClicked, style "background-color" "green", style "color" "white", style "padding" "20px 30px", style "font-size" "20px", style "font-weight" "bold", style "border-radius" "10px" ] [ text "blast off" ]
-                , button [ onClick LandButtonClicked, style "background-color" "red", style "color" "white", style "padding" "20px 30px", style "font-size" "20px", style "font-weight" "bold", style "border-radius" "10px" ] [ text "come home" ]
-                , button [ onClick ClickedBigger, style "background-color" "blue", style "color" "white", style "padding" "20px 30px", style "font-size" "20px", style "font-weight" "bold", style "border-radius" "10px" ] [ text "BIGGER" ]
-                , button [ onClick ClickedSmaller, style "background-color" "yellow", style "color" "black", style "padding" "20px 30px", style "font-size" "20px", style "font-weight" "bold", style "border-radius" "10px" ] [ text "SMALLER" ]
+                [ style "z-index" "10", class "bg-gray-400 h-full w-full" ]
+                [ div []
+                    [ control ClickedBigger "Bigger" "bg-purple-500"
+                    , control ClickedSmaller "Smaller" "bg-yellow-500"
+                    , control (ClickedHotter 1) "Hotter" "bg-red-500 "
+                    , control (ClickedColder 1) "Colder" "bg-blue-500"
+                    , control (ClickedHotter 100) "WAY Hotter" "bg-red-700 "
+                    , control (ClickedColder 100) "WAY Colder" "bg-blue-700"
+                    , control LaunchButtonClicked "Launch" "bg-gray-900"
+                    , control LandButtonClicked "Land" "bg-gray-600"
+                    ]
+                , div [ style "font-size" "100px", class "flex justify-center items-center" ]
+                    [ model.temperature |> String.fromFloat |> text
+                    , span [] [ text "°F" ]
+                    ]
+                , div [ style "font-size" "100px", class "flex justify-center items-center" ]
+                    [ ((model.temperature - 32.0) * 5 / 9) |> String.fromFloat |> text
+                    , span [] [ text "°C" ]
+                    ]
                 ]
             ]
         ]
